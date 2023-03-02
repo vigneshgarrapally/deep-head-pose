@@ -2,5 +2,6 @@
 *.npy
 data/*
 output/*
+input/*
 *.jpg
 *.png
