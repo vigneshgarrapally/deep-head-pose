@@ -39,6 +39,8 @@ pip install -r requirements.txt
 
 This repository contains several scripts to train and test. Detailed instructions for using the scripts in this repository can be found [here](code/README.md).
 
+> **_NOTE:_**  Run Scripts from root directory of the repository instead of code directory to avoid any errors with respect to file paths.
+
 Please open an issue if you have an problem.
 
 ## Acknowledgements
