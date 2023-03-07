@@ -1,7 +1,6 @@
 *.pyc
 *.npy
-data/*
-output/*
-input/*
-*.jpg
-*.png
+inputs/images/
+inputs/videos/
+outputs/images/
+outputs/videos/

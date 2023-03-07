@@ -8,47 +8,53 @@ import torch.backends.cudnn as cudnn
 import torchvision
 import torch.nn.functional as F
 from PIL import Image
-
+from pathlib import Path
 import hopenet, utils
 from mtcnn import MTCNN
 
 
 
 
-def parse_args():
+if __name__ == '__main__':
     """Parse input arguments."""
     parser = argparse.ArgumentParser(description='Head pose estimation using the Hopenet network.')
-    parser.add_argument('--gpu', dest='gpu_id', help='GPU device id to use [0]',
+    parser.add_argument('--gpu', dest='gpu_id', help='GPU device id to use. Default is [0]',
             default=0, type=int)
     parser.add_argument('--snapshot', dest='snapshot', help='Path of model snapshot.',
-          default='', type=str)
-    parser.add_argument('--face_model', dest='face_model', help='Path of DLIB face detection model.',
-          default='', type=str)
-    parser.add_argument('--folder', dest='folder', help='Folder containing images')
+          required=True, type=str)
+    input_group=parser.add_mutually_exclusive_group(required=True)
+    input_group.add_argument('--folder',help='Folder containing images',type=str)
+    input_group.add_argument('--image', help='Image file to test',type=str)
     args = parser.parse_args()
-    return args
-
-if __name__ == '__main__':
-    args = parse_args()
 
     cudnn.enabled = True
 
     batch_size = 1
     gpu = args.gpu_id
     snapshot_path = args.snapshot
-    out_dir = 'output/images'
-    folder_path = args.folder
-
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
-
-    if not os.path.exists(args.folder):
-        sys.exit('Folder does not exist')
+    out_dir = Path('outputs/images')
+    #check if snapshot exists and is file
+    if not Path(snapshot_path).exists() or not Path(snapshot_path).is_file():
+        print("Snapshot does not exist")
+        sys.exit()
+    if not Path(out_dir).exists():
+        Path(out_dir).mkdir(parents=True)
+    
+    #check if folder or image is provided
+    if args.folder:
+        folder_path = args.folder
+        if not Path(folder_path).exists() or not Path(folder_path).is_dir():
+            print("Folder does not exist")
+            sys.exit()
+    elif args.image:
+        image_path = args.image
+        if not Path(image_path).exists() or not Path(image_path).is_file():
+            print("Image does not exist")
+            sys.exit()
+    print('Loading hopenet.')
 
     # ResNet50 structure
     model = hopenet.Hopenet(torchvision.models.resnet.Bottleneck, [3, 4, 6, 3], 66)
-
-    print('Loading snapshot.')
     # Load snapshot
     saved_state_dict = torch.load(snapshot_path)
     model.load_state_dict(saved_state_dict)
@@ -70,7 +76,10 @@ if __name__ == '__main__':
     idx_tensor = [idx for idx in range(66)]
     idx_tensor = torch.FloatTensor(idx_tensor).cuda(gpu)
     #get all the .png files in the folder
-    files = [f for f in os.listdir(folder_path) if f.endswith('.jpg')]
+    if args.folder:
+        files = [f for f in os.listdir(folder_path) if f.endswith('.jpg')]
+    elif args.image:
+        files = [args.image]
     frame_num = 1
     #initialize mtcnn detector
     detector = MTCNN()
