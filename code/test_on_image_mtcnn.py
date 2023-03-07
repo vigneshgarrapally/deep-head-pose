@@ -1,6 +1,6 @@
-import sys, os, argparse
+import sys,argparse
 import cv2
-
+import logging
 import torch
 from torch.autograd import Variable
 from torchvision import transforms
@@ -12,7 +12,7 @@ from pathlib import Path
 import hopenet, utils
 from mtcnn import MTCNN
 
-
+logging.disable(logging.WARNING)
 
 
 if __name__ == '__main__':
@@ -21,14 +21,14 @@ if __name__ == '__main__':
     parser.add_argument('--gpu', dest='gpu_id', help='GPU device id to use. Default is [0]',
             default=0, type=int)
     parser.add_argument('--snapshot', dest='snapshot', help='Path of model snapshot.',
-          required=True, type=str)
+          required=True, type=str,default='../models/hopenet_robust_alpha1.pkl')
     input_group=parser.add_mutually_exclusive_group(required=True)
     input_group.add_argument('--folder',help='Folder containing images',type=str)
     input_group.add_argument('--image', help='Image file to test',type=str)
     args = parser.parse_args()
 
     cudnn.enabled = True
-
+    image_extensions = ['.jpg', '.jpeg', '.png', '.bmp']
     batch_size = 1
     gpu = args.gpu_id
     snapshot_path = args.snapshot
@@ -75,9 +75,9 @@ if __name__ == '__main__':
 
     idx_tensor = [idx for idx in range(66)]
     idx_tensor = torch.FloatTensor(idx_tensor).cuda(gpu)
-    #get all the .png files in the folder
+    #get full paths of all images in folder using pathlib
     if args.folder:
-        files = [f for f in os.listdir(folder_path) if f.endswith('.jpg')]
+        files = [f for f in Path(folder_path).iterdir() if f.suffix in image_extensions]
     elif args.image:
         files = [args.image]
     frame_num = 1
@@ -86,8 +86,8 @@ if __name__ == '__main__':
     for file in files:
         # Read image
         print("Processing Frame: " + str(frame_num))
-        save_path=out_dir + '/' + file
-        frame=cv2.imread(folder_path + file)
+        save_path=out_dir / Path(file).name
+        frame=cv2.imread(str(file))
         cv2_frame = cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
         # MTCNN face detection
         dets = detector.detect_faces(cv2_frame)
@@ -125,6 +125,5 @@ if __name__ == '__main__':
             cv2.putText(frame, "PITCH: " + str(pitch_predicted), (x_min, y_min+20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
             cv2.putText(frame, "ROLL: " + str(roll_predicted), (x_min, y_min+40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
             #save the image
-            print(save_path)
-            cv2.imwrite("output/images/" + str(frame_num) + ".jpg", frame)
+            cv2.imwrite(str(save_path),frame)
         frame_num += 1
