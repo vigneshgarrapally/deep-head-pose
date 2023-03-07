@@ -1,6 +1,11 @@
 *.pyc
 *.npy
-inputs/images/
-inputs/videos/
-outputs/images/
-outputs/videos/
+*.jpg
+*.png
+*.mp4
+*.avi
+*.mov
+*.mpg
+*.mpeg
+*.mp3
+*.txt
